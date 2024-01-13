@@ -1,6 +1,11 @@
 #include "ekf.hpp"
+
 using namespace Eigen;
-using namespace std;
+using Quat = Eigen::Quaterniond;
+using Vec3 = Eigen::Vector3d;
+using Vec6 = Eigen::Vector<double, 6>;
+using Mat3 = Eigen::Matrix<double, 3, 3>;
+using Mat6 = Eigen::Matrix<double, 6, 6>;
 
 /*
  * Copyright (C) 2017 P.Bernal-Polo
@@ -47,12 +52,12 @@ using namespace std;
 //   This class implements some methods with the objective of testing, in
 //   an easy way, the performance of an algorithm of the
 //   EKF class
-class OE_Tester {
+class Simulator {
    public:
     // PUBLIC METHODS
-    OE_Tester();
-    OE_Tester(const OE_Tester &orig);
-    virtual ~OE_Tester();
+    Simulator();
+    Simulator(const Simulator &orig);
+    virtual ~Simulator();
 
     // sets the title for files to save results
     void set_title(std::string titleIn);
@@ -162,13 +167,13 @@ class OE_Tester {
     bool hasCrashed(Quat const &q);
 
     // a wrapper to use the test() method with multithreading
-    static void testWrapper(OE_Tester *myOE_Tester, EKF *myEstimator,
+    static void testWrapper(Simulator *myOE_Tester, EKF *myEstimator,
                             double infoUpdateTime);
 
     static void printMatrix(double *M, int n, int m);
 };
 
-OE_Tester::OE_Tester()
+Simulator::Simulator()
 {
     title = "simulationResult";
     // number of frequency samples
@@ -200,16 +205,16 @@ OE_Tester::OE_Tester()
     Rv = 1.0e-4;
 }
 
-OE_Tester::OE_Tester(const OE_Tester &orig) { (void)orig; }
+Simulator::Simulator(const Simulator &orig) { (void)orig; }
 
-OE_Tester::~OE_Tester() {}
+Simulator::~Simulator() {}
 
 // Method: set_title
 // sets the title for files to save results
 // inputs:
 //  titleIn: title of the file to save results
 // outputs:
-void OE_Tester::set_title(std::string titleIn)
+void Simulator::set_title(std::string titleIn)
 {
     title = titleIn;
 
@@ -223,7 +228,7 @@ void OE_Tester::set_title(std::string titleIn)
 // inputs:
 //  fIn: vector of frequencies (Hz)
 //  NfrequenciesIn: number of frequencies in fIn
-void OE_Tester::set_f(double *fIn, int NfrequenciesIn)
+void Simulator::set_f(double *fIn, int NfrequenciesIn)
 {
     // first the Nfrequencies
     if (NfrequenciesIn < 0 || 50 < NfrequenciesIn) {
@@ -255,7 +260,7 @@ void OE_Tester::set_f(double *fIn, int NfrequenciesIn)
 //  convergenceThresholdIn: degrees difference for which the convergence is
 //  considered achieved (degrees)
 // outputs:
-void OE_Tester::set_convergenceThreshold(double convergenceThresholdIn)
+void Simulator::set_convergenceThreshold(double convergenceThresholdIn)
 {
     if (convergenceThresholdIn <= 0.0) {
         std::cout << "Error in \"set_convergenceThreshold()\": "
@@ -272,7 +277,7 @@ void OE_Tester::set_convergenceThreshold(double convergenceThresholdIn)
 // inputs:
 //  maxConvergenceUpdatesIn: maximum number of updates for the convergence step
 // outputs:
-void OE_Tester::set_maxConvergenceUpdates(int maxConvergenceUpdatesIn)
+void Simulator::set_maxConvergenceUpdates(int maxConvergenceUpdatesIn)
 {
     if (maxConvergenceUpdatesIn < 1) {
         std::cout << "Error in \"set_maxConvergenceUpdates()\": "
@@ -290,7 +295,7 @@ void OE_Tester::set_maxConvergenceUpdates(int maxConvergenceUpdatesIn)
 // inputs:
 //  TsimIn: period of time for which the simulation is run (s)
 // outputs:
-void OE_Tester::set_Tsim(double TsimIn)
+void Simulator::set_Tsim(double TsimIn)
 {
     double minf = 1.0e9;
     for (int k = 0; k < Nfrequencies; k++) {
@@ -312,7 +317,7 @@ void OE_Tester::set_Tsim(double TsimIn)
 //  dtdtsiminIn: number of simulation steps carried before each update (that
 //  turns out to be equal to dt/dtsim)
 // outputs:
-void OE_Tester::set_simStepsPerUpdate(int dtdtsimIn)
+void Simulator::set_simStepsPerUpdate(int dtdtsimIn)
 {
     if (dtdtsimIn < 1) {
         std::cout << "Error in \"set_simStepsPerUpdate()\": dtdtsim must be "
@@ -329,7 +334,7 @@ void OE_Tester::set_simStepsPerUpdate(int dtdtsimIn)
 // testing the EKF inputs:
 //  NtimesIn: number of trajectories generated for each frequency
 // outputs:
-void OE_Tester::set_Ntimes(int NtimesIn)
+void Simulator::set_Ntimes(int NtimesIn)
 {
     if (NtimesIn < 1) {
         std::cout << "Error in \"set_Ntimes()\": Ntimes must be positive\n";
@@ -346,7 +351,7 @@ void OE_Tester::set_Ntimes(int NtimesIn)
 //  QwMaxIn: maximum variance for the process noise in the angular velocity per
 //  unit of time (rad^2/s^3)
 // outputs:
-void OE_Tester::set_QwMax(double QwMaxIn)
+void Simulator::set_QwMax(double QwMaxIn)
 {
     if (QwMaxIn <= 0.0) {
         std::cout << "Error in \"set_QwMax()\": QwMax must be positive\n";
@@ -362,7 +367,7 @@ void OE_Tester::set_QwMax(double QwMaxIn)
 // inputs:
 //  QvMaxIn: maximum variance for the process noise in the measured vector
 // outputs:
-void OE_Tester::set_QvMax(double QvMaxIn)
+void Simulator::set_QvMax(double QvMaxIn)
 {
     if (QvMaxIn <= 0.0) {
         std::cout << "Error in \"set_QvMax()\": QvMax must be positive\n";
@@ -378,7 +383,7 @@ void OE_Tester::set_QvMax(double QvMaxIn)
 // inputs:
 //  RwIn: variance of the angular velocity measurement (rad^2/s^2)
 // outputs:
-void OE_Tester::set_Rw(double RwIn)
+void Simulator::set_Rw(double RwIn)
 {
     if (RwIn <= 0.0) {
         std::cout << "Error in \"set_Rw()\": Rw must be positive\n";
@@ -394,7 +399,7 @@ void OE_Tester::set_Rw(double RwIn)
 // inputs:
 //  RvIn: variance for the vector measurement
 // outputs:
-void OE_Tester::set_Rv(double RvIn)
+void Simulator::set_Rv(double RvIn)
 {
     if (RvIn <= 0.0) {
         std::cout << "Error in \"set_Rv()\": Rv must be positive\n";
@@ -413,7 +418,7 @@ void OE_Tester::set_Rv(double RvIn)
 //  infoUpdateTime: time step to show information about the simulation progress.
 //  If it is negative, no information will be shown
 // outputs:
-void OE_Tester::test(EKF *myEstimator, double infoUpdateTime)
+void Simulator::test(EKF *myEstimator, double infoUpdateTime)
 {
     // first of all, let me write about the decisions taken for this simulation.
     // The first thought was to generate a sequence of states that generate a
@@ -702,7 +707,7 @@ void OE_Tester::test(EKF *myEstimator, double infoUpdateTime)
 //  (for each frequency) with the sum of squared errors in orientation
 //  estimations
 // outputs:
-void OE_Tester::save_results(int *NnoConvs, int *Ncrashes, double *eTs,
+void Simulator::save_results(int *NnoConvs, int *Ncrashes, double *eTs,
                              double *eT2s, double *eQs, double *eQ2s)
 {
     // we open the file
@@ -785,7 +790,7 @@ void OE_Tester::save_results(int *NnoConvs, int *Ncrashes, double *eTs,
 //  myEstimator: pointer to the EKF object that we want to test
 //  infoUpdateTime: the infoUpdateTime variable to use in the test() method
 // outputs:
-void OE_Tester::testWrapper(OE_Tester *myOE_Tester, EKF *myEstimator,
+void Simulator::testWrapper(Simulator *myOE_Tester, EKF *myEstimator,
                             double infoUpdateTime)
 {
     myOE_Tester->test(myEstimator, infoUpdateTime);
@@ -804,7 +809,7 @@ void OE_Tester::testWrapper(OE_Tester *myOE_Tester, EKF *myEstimator,
 // outputs:
 //  q: new quaternion describing the real orientation of the system (it
 //  satisfies qnew = q*qw) w: new angular velocity (rad/s)
-void OE_Tester::trajectoryStep(Quat &q, Vec3 &w, double dtsim, double nw,
+void Simulator::trajectoryStep(Quat &q, Vec3 &w, double dtsim, double nw,
                                unsigned int *seed)
 {
     // first of all we generate three random numbers normally distributed
@@ -848,7 +853,7 @@ void OE_Tester::trajectoryStep(Quat &q, Vec3 &w, double dtsim, double nw,
 // outputs:
 //  vm: simulated vector measurement
 //  wm: simulated gyroscope measurement (rad/s)
-void OE_Tester::get_measurement(Quat const &q, Vec3 const &w, Vec3 const &v,
+void Simulator::get_measurement(Quat const &q, Vec3 const &w, Vec3 const &v,
                                 double nv, double rv, double rw,
                                 unsigned int *seed, Vec3 &vm, Vec3 &wm)
 {
@@ -879,7 +884,7 @@ void OE_Tester::get_measurement(Quat const &q, Vec3 const &w, Vec3 const &v,
 // (these quaternions transform vectors from the sensor reference frame to the
 // external reference frame) outputs:
 //  theta: angle between real and estimated orientations (rad)
-double OE_Tester::thetaQ(Quat const &qr, Quat const &qe)
+double Simulator::thetaQ(Quat const &qr, Quat const &qe)
 {
     // we compute the dot product of quaternions
     auto cr = qr.coeffs();
@@ -902,7 +907,7 @@ double OE_Tester::thetaQ(Quat const &qr, Quat const &qe)
 //  distribution
 // outputs:
 //  rn: sample of the normal distribution (double)
-double OE_Tester::myNormalRandom(unsigned int *seed, double sigma)
+double Simulator::myNormalRandom(unsigned int *seed, double sigma)
 {
     // we generate two uniform random doubles
     double urand1 = (rand_r(seed) % 1000000 + 1) / 1000000.0;
@@ -918,7 +923,7 @@ double OE_Tester::myNormalRandom(unsigned int *seed, double sigma)
 //  q: quaternion computed with the algorithm
 // outputs:
 //  crashed: boolean variable. It will be true if it has crashed; false if not
-bool OE_Tester::hasCrashed(Quat const &q)
+bool Simulator::hasCrashed(Quat const &q)
 {
     double norm = q.norm();
     // we will consider a crash in the algorithm if:
@@ -930,7 +935,7 @@ bool OE_Tester::hasCrashed(Quat const &q)
     return r;
 }
 
-void OE_Tester::printMatrix(double *M, int n, int m)
+void Simulator::printMatrix(double *M, int n, int m)
 {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++)
@@ -950,7 +955,7 @@ void OE_Tester::printMatrix(double *M, int n, int m)
 //  theEstimator: pointer to the EKF object to test
 // outputs:
 //  crashed: boolean variable. It will be true if it has crashed; false if not
-void OE_Tester::test_computationalCost(long Ntimes, EKF *theEstimator)
+void Simulator::test_computationalCost(long Ntimes, EKF *theEstimator)
 {
     // we define the necessary entities
     double dt = 1.0e-2;
@@ -1007,7 +1012,7 @@ int main()
         try {
             std::cout << title << " " << R << "\n";
 
-            OE_Tester myTester;
+            Simulator myTester;
             myTester.set_title(path + title + aftertitle);
             const int Nfrequencies = 7;
             double f[Nfrequencies] = {2.0,   5.0,   10.0,  50.0,

@@ -1,25 +1,21 @@
+#ifndef EKF_HPP
+#define EKF_HPP
+
 #include <Eigen/Dense>
-using Quat = Eigen::Quaterniond;
-using Vec3 = Eigen::Vector3d;
-using Vec6 = Eigen::Vector<double, 6>;
-using Mat3 = Eigen::Matrix<double, 3, 3>;
-using Mat6 = Eigen::Matrix<double, 6, 6>;
 
 class EKF {
+    using Quat = Eigen::Quaterniond;
+    using Vec3 = Eigen::Vector3d;
+    using Vec6 = Eigen::Vector<double, 6>;
+    using Mat3 = Eigen::Matrix<double, 3, 3>;
+    using Mat6 = Eigen::Matrix<double, 6, 6>;
+
    public:
     void init(Mat3 const &Rw_in, Mat3 const &Rv_in);
     void update(Vec3 const &vExt, Vec3 const &vInt, Vec3 const &wMeasured,
                 double dt);
 
     inline Quat get_quat() { return Quat(this->q); }
-    inline void get_q(double *qout)
-    {
-        auto c = this->q.coeffs();
-        qout[0] = c(0);
-        qout[1] = c(1);
-        qout[2] = c(2);
-        qout[3] = c(3);
-    }
 
    private:
     Quat q;
@@ -30,7 +26,7 @@ class EKF {
     Mat3 Rw;
     Mat3 Rv;
 
-    inline Quat fromChartPoint(Vec3 const &e)
+    inline Quat from_chart_point(Vec3 const &e)
     {
         const double aux = 1.0 / sqrt(4.0 + e.squaredNorm());
         return Quat(2.0 * aux, e.x() * aux, e.y() * aux, e.z() * aux);
@@ -40,7 +36,7 @@ class EKF {
     // output:
     //     T_out: transformation matrix to update cov matrix for chart centered
     //     at quat p
-    inline Mat3 chartUpdateMatrix(Quat delta)
+    inline Mat3 chart_update_matrix(Quat delta)
     {
         Mat3 T;
         auto const d = delta.w() * delta.coeffs();  // or delta.z() ??
@@ -53,7 +49,7 @@ class EKF {
         return T;
     }
 
-    inline Mat3 crossMatrix(Vec3 v)
+    inline Mat3 cross_matrix(Vec3 v)
     {
         Mat3 out;
         double const v1 = v(0), v2 = v(1), v3 = v(2);
@@ -65,3 +61,5 @@ class EKF {
         return out;
     }
 };
+
+#endif
