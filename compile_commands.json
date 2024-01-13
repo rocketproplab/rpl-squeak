@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/nathan/squeak-filter/build/src",
+  "command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -I/Users/nathan/squeak-filter/src/../include -isystem /opt/homebrew/include/eigen3 -Wall -Wextra -O3 -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk -mmacosx-version-min=14.0 -o CMakeFiles/run.dir/main.cpp.o -c /Users/nathan/squeak-filter/src/main.cpp",
+  "file": "/Users/nathan/squeak-filter/src/main.cpp",
+  "output": "src/CMakeFiles/run.dir/main.cpp.o"
+},
+{
+  "directory": "/Users/nathan/squeak-filter/build/src",
+  "command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -I/Users/nathan/squeak-filter/src/../include -isystem /opt/homebrew/include/eigen3 -Wall -Wextra -O3 -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk -mmacosx-version-min=14.0 -o CMakeFiles/run.dir/ekf.cpp.o -c /Users/nathan/squeak-filter/src/ekf.cpp",
+  "file": "/Users/nathan/squeak-filter/src/ekf.cpp",
+  "output": "src/CMakeFiles/run.dir/ekf.cpp.o"
+}
+]
