@@ -1,7 +1,11 @@
 #ifndef EKF_HPP
 #define EKF_HPP
 
+#ifdef ARDUINO
+#include <ArduinoEigenDense.h>
+#else
 #include <Eigen/Dense>
+#endif
 
 class EKF {
     using Quat = Eigen::Quaterniond;
